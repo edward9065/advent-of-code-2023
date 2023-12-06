@@ -56,7 +56,7 @@ with open('../input/day03.txt', encoding='utf-8') as input:
     grid = [list(row) for row in grid]
     grid = expand_grid(grid)
     # print(grid)
-    for row_index, row in enumerate(grid[1:len(grid)]):
+    for row_index, row in enumerate(grid[1:]):
         column_index = 1
         while(column_index<(len(row)-1)):
             number, column_index, symbol_adjacent = get_number(grid, row_index, column_index)

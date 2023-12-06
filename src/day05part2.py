@@ -1,61 +1,36 @@
 from operator import itemgetter
-import sys
-class interval_list: 
 
-    def __init__(self, category: list[list[int]] = [[]]):
-        self.starts = []
-        self.ends = []
-        self.destinations = []
-
-        category.sort(key=itemgetter(1))
-        for item in category:
-            self.starts.append(item[1])
-            self.ends.append(item[1] + item[2] - 1)
-            self.destinations.append(item[0])
-
-    def __repr__(self):
-        return f'{self.starts}, {self.ends}, {self.destinations}'        
-    
-    def get_destination(self, source: int):
-        for i in range(len(self.starts)):
-            if source >= self.starts[i] and source <= self.ends[i]:
-                return self.destinations[i] + source - self.starts[i]  
-
-        return source
-
-    def get_destination_from_interval(self, start: int, length: int):
-        min_val = sys.maxsize
-        min_non_overlapped_value_found = False
-        end = start+length-1
-        last_end = end
-
-        for i in range(len(self.starts)):
-            if not((start > self.ends[i]) or (end < self.starts[i])):
-
-                if(start > self.starts[i]):
-
-                    min_val = min(min_val, self.get_destination(start))
-                    if not min_non_overlapped_value_found:
-                        if self.starts[i] > (last_end + 1):
-                            min_val = min(min_val, last_end+1)
-                            min_non_overlapped_value_found = True
-                        last_end = self.ends[i]
-                else: 
-                    if i == 0:
-                        min_val = min(start, self.get_destination(self.starts[i]))
-                        min_non_overlapped_value_found = True
-                    else:
-                        min_val = min(min_val, self.get_destination(self.starts[i]))
-            else: 
-                break
-        return min_val
-
+# assumes map interval list is sorted
+def get_destination_intervals(source_interval_list, map_interval_list):
+    destination_interval_list = []
+    for source in source_interval_list:
+        temp = []
+        for map in map_interval_list:
+            if source[0] <= map[1] and source[1] >= map[0]:
+                interval = (max(source[0], map[0]), min(source[1], map[1]))
+                temp.append(interval)
+                shift = map[0] - map[2]
+                interval = (interval[0] - shift, interval[1] - shift)
+                destination_interval_list.append(interval)
+        if len(temp) > 0:
+            if(source[0] < temp[0][0]): 
+                destination_interval_list.append((source[0], temp[0][0]-1))
+            if(source[1] > temp[-1][1]):
+                destination_interval_list.append((temp[-1][1]+1, source[1]))
+        elif len(temp) == 0: 
+            destination_interval_list.append(source)
+        for i in range(len(temp)-1):
+            if(temp[i][1] < temp[i+1][0] - 1):
+                destination_interval_list.append((temp[i][1], temp[i+1][0]))
+    return destination_interval_list
 
 with open('../input/day05.txt', encoding='utf-8') as input:
     data = input.read().split("\n\n")
     # print(data)
-seeds = data[0]
-seeds = seeds.split(": ")[1].split(" ")
+seeds = data[0].split(": ")[1].split(" ")
+seed_intervals = []
+for i in range(0, len(seeds), 2):
+    seed_intervals.append((int(seeds[i]), int(seeds[i]) + int(seeds[i+1])-1))
 
 index_to_category_list = [
     "seed_to_soil",
@@ -81,23 +56,20 @@ for i, listing in enumerate(data[1:]):
     data[i+1] = listing.split("\n")[1:]
     for j, category in enumerate(data[i+1]):
         data[i+1][j] = [int(num) for num in category.split(" ")]
-    category_maps[index_to_category_list[i]] = interval_list(data[i+1])
-    
+    data[i+1].sort(key=itemgetter(1))
+    category_maps[index_to_category_list[i]] = [(b, b+c-1, a) for [a,b,c] in data[i+1]]
 
-def get_location(seed: int, len) -> int: 
-    soil = category_maps["seed_to_soil"].get_destination_from_interval(seed, len)
-    fertilizer = category_maps["soil_to_fertilizer"].get_destination(soil)
-    water = category_maps["fertilizer_to_water"].get_destination(fertilizer)
-    light = category_maps["water_to_light"].get_destination(water)
-    temperature = category_maps["light_to_temperature"].get_destination(light)
-    humidity = category_maps["temperature_to_humidity"].get_destination(temperature)
-    return category_maps["humidity_to_location"].get_destination(humidity)
+soils = get_destination_intervals(seed_intervals, category_maps["seed_to_soil"])
+fertilizers = get_destination_intervals(soils, category_maps["soil_to_fertilizer"])
+water = get_destination_intervals(fertilizers, category_maps["fertilizer_to_water"])
+light = get_destination_intervals(water, category_maps["water_to_light"])
+temperatures = get_destination_intervals(light, category_maps["light_to_temperature"])
+humidities = get_destination_intervals(temperatures, category_maps["temperature_to_humidity"])
+locations = get_destination_intervals(humidities, category_maps["humidity_to_location"])
 
-closest_location = get_location(int(seeds[0]), int(seeds[1]))
+min_location = locations[0][0]
+for i in range(1, len(locations)):
+    min_location = min(locations[i][0], min_location)
 
-for i in range(2, len(seeds), 2):
-    closest_location = min(closest_location, min(closest_location, get_location(int(seeds[i]), int(seeds[i+1]))))
-    
-
-print(closest_location)
-    
+# print(sorted(locations, key=itemgetter(0)))
+print(min_location)
