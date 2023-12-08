@@ -19,7 +19,20 @@ card_values = {
 # value is arbitrary, but it's higher the higher the hand type is - this is for use in comparison
 def get_hand_value(hand: str) -> int: 
     card_counter = Counter(hand)
-    two_most_common = card_counter.most_common(2)
+    three_most_common = card_counter.most_common(3)
+    J_count = card_counter["J"]
+    if(J_count == 5):
+        return 7
+
+    for i, card in enumerate(three_most_common):
+        if card[0] == "J":
+            del three_most_common[i]
+            break
+  
+    two_most_common = three_most_common[0:2]
+    two_most_common = [list(x) for x in two_most_common]
+    two_most_common[0][1] += J_count
+
     if two_most_common[0][1] > 3:
         return two_most_common[0][1] + 2
     elif two_most_common[0][1] == 3:
@@ -27,9 +40,8 @@ def get_hand_value(hand: str) -> int:
     elif two_most_common[0][1] == 2: 
         return two_most_common[0][1] + two_most_common[1][1] - 1
     else:
-        return two_most_common[0][1] 
-
-    
+        return two_most_common[0][1]    
+     
 def cmp_hands(hand1: list, hand2: list):
     val1 = get_hand_value(hand1[0])
     val2 = get_hand_value(hand2[0])
