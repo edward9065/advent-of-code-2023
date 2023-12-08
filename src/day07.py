@@ -4,7 +4,7 @@ card_values = {
     "A": 14,
     "K": 13,
     "Q": 12,
-    "J": 11,
+    "J": 0,
     "T": 10,
     "9": 9,
     "8": 8,
@@ -24,8 +24,10 @@ def get_hand_value(hand: str) -> int:
         return two_most_common[0][1] + 2
     elif two_most_common[0][1] == 3:
         return two_most_common[0][1] + two_most_common[1][1]
+    elif two_most_common[0][1] == 2: 
+        return two_most_common[0][1] + two_most_common[1][1] - 1
     else:
-        return two_most_common[0][1] + 1 
+        return two_most_common[0][1] 
 
     
 def cmp_hands(hand1: list, hand2: list):
